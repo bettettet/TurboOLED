@@ -11,9 +11,9 @@
 #define FILL_BUFFER(buf) memset(buf, 0xFF, 1024)
 class TurboOLED{
     public:
-        void oled_init(int speed);
+        void oled_init(int SDApin,int SCLpin,int speed);
         esp_err_t update_display();
-        void draw_bitmap(uint8_t x, uint8_t y, int bitmap[],uint8_t width, uint8_t height,bool overwrite=0);
+        void draw_bitmap(int x, int y, int bitmap[],uint8_t width, uint8_t height,bool overwrite=0);
         void set_pixel(uint8_t x,uint8_t y);
         void clear_pixel(uint8_t x,uint8_t y);
         void fill_screen();
