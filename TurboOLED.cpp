@@ -1,10 +1,11 @@
+//"don't look in the back, there's redstone there"
 #include "TurboOLED.h"
-void TurboOLED::oled_init(int speed) {
+void TurboOLED::oled_init(int SDApin,int SCLpin,int speed) {
     i2c_config_t conf;
     conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = (gpio_num_t)SDA_PIN;
+    conf.sda_io_num = (gpio_num_t)SDApin;
     conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_io_num = (gpio_num_t)SCL_PIN;
+    conf.scl_io_num = (gpio_num_t)SCLpin;
     conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
     conf.master.clk_speed = speed;
     conf.clk_flags = 0;
@@ -70,38 +71,40 @@ esp_err_t TurboOLED::update_display() {
     i2c_cmd_link_delete(cmd);
     return ret;
 }
-void TurboOLED::draw_bitmap(uint8_t x, uint8_t y, int bitmap[],uint8_t width, uint8_t height,bool overwrite){
+void TurboOLED::draw_bitmap(int x, int y, int bitmap[],uint8_t width, uint8_t height,bool overwrite){
     x = (x)<(0)?(0):(x)>(128-width)?(128-width):(x);
     y = (y)<(0)?(0):(y)>(64-height)?(64-height):(y);
     int i = 0;
+    //good ol' unfinished code
     switch(overwrite){
         case 0:
             while(i < width){
                 buffer[x+i+((y>>3)<<7)] |= (bitmap[i]&(~(1<<(9-(y&7)))))<<(y&7);
                 int j = 0;
-                while(j < ((height-(y&7))<<3)+((height-(y&7))&7)?(1):(0)){
+                while(1){
                     if(8+(j<<3)-(y&7)>height) break;
                     buffer[x+i+(((y>>3)+1+j)<<7)] |= (bitmap[i]>>(8+(j<<3)-(y&7)))&255;
                     j++;
                 }
                 i++;
+                //Serial.printf("j:%d limit:%d\n",j,((height-(y&7))>>3)+((height-(y&7))&7)?(1):(0));
             }
             break;
         case 1:
             while(i < width){
-                buffer[x+i+((y>>3)<<7)] &= 255>>(y&7);
+                buffer[x+i+((y>>3)<<7)] &= 255>>(8-(y&7));
                 buffer[x+i+((y>>3)<<7)] |= (bitmap[i]&(~(1<<(9-(y&7)))))<<(y&7);
                 int j = 0;
-                while(j < ((height-(y&7))<<3)+((height-(y&7))&7)?(1):(0)){
-                    if(8+(j<<3)-(y&7)>height) break;
-                    if((bitmap[i]>>(8+(j<<3)-(y&7)))&255 < 127){
-                        buffer[x+i+(((y>>3)+1+j)<<7)] &= ~(1<<(height-8-(j<<3)-(y&7)));
-                        buffer[x+i+(((y>>3)+1+j)<<7)] |= (bitmap[i]>>(8+(j<<3)-(y&7)))&255;
-                    } else {
-                    buffer[x+i+(((y>>3)+1+j)<<7)] = (bitmap[i]>>(8+(j<<3)-(y&7)))&255;
+                while(1){
+                    if(8+(j<<3)-(y&7)>height){
+                        buffer[x+i+(((y>>3)+j)<<7)] = 255;
+                        break;
                     }
+                    buffer[x+i+(((y>>3)+1+j)<<7)] = (bitmap[i]>>(8+(j<<3)-(y&7)))&255;
                     j++;
                 }
+                buffer[x+i+(((y>>3)+1+j)<<7)] &= ~(1<<(height-8-(j<<3)+(y&7)));
+                buffer[x+i+(((y>>3)+1+j)<<7)] |= (bitmap[i]>>(8+(j<<3)-(y&7)))&255;
                 i++;
             }
             break;
